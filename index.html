@@ -221,6 +221,9 @@
         async function sendCmd(ip, cmd) {
             await fetch(`${API_BASE}/api/cmd`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ ip: ip, cmd: cmd })
             });
         }
